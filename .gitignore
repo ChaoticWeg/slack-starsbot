@@ -240,3 +240,6 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+
+# Sensitive stuff
+StarsBot/Slack/SlackInfo.cs
