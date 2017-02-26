@@ -18,6 +18,7 @@ namespace StarsBot
 
         public event EventHandler<PenaltyEventArgs> Penalty;
         public event EventHandler<GoalScoredEventArgs> GoalScored;
+        public event EventHandler<ShootoutTryEventArgs> ShootoutTry;
 #pragma warning restore 67
 
     }
@@ -112,6 +113,30 @@ namespace StarsBot
         public GoalScoredEventArgs(GameData data, Play currentPlay) : base(data)
         {
             CurrentPlay = currentPlay;
+        }
+    }
+
+    public class ShootoutTryEventArgs : NHLEventArgs
+    {
+        public Play CurrentPlay { get; private set; }
+
+        public ShootoutTryEventArgs(GameData data, Play currentPlay) : base(data)
+        {
+            CurrentPlay = currentPlay;
+        }
+    }
+
+    public class ShootoutGoalEventArgs : ShootoutTryEventArgs
+    {
+        public ShootoutGoalEventArgs(GameData data, Play play) : base(data, play)
+        {
+        }
+    }
+
+    public class ShootoutMissEventArgs : ShootoutTryEventArgs
+    {
+        public ShootoutMissEventArgs(GameData data, Play play) : base(data, play)
+        {
         }
     }
 }

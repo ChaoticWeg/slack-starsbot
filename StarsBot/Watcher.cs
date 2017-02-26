@@ -121,34 +121,52 @@ namespace StarsBot
 
                 if (eventType != null)
                 {
-                    if (eventType.Equals("GAME_SCHEDULED"))
+
+                    // shootout try
+                    if (play.About.Period == 5)
                     {
-                        GameScheduled?.Invoke(this, new GameScheduledEventArgs(context.Game));
+                        if (eventType.Equals("GOAL"))
+                            ShootoutTry?.Invoke(this, new ShootoutGoalEventArgs(context.Game, play));
+
+                        else if (eventType.Equals("SHOT"))
+                            ShootoutTry?.Invoke(this, new ShootoutMissEventArgs(context.Game, play));
                     }
 
-                    if (eventType.Equals("PERIOD_START"))
+
+                    // not a shootout try
+                    else
                     {
-                        if (play.About.Period == 1)
-                            GameStarted?.Invoke(this,
-                                new GameStartedEventArgs(context.Game,
-                                    TimeZoneInfo.ConvertTimeFromUtc(DateTime.Parse(play.About.DateTimeStr, null,
-                                        System.Globalization.DateTimeStyles.RoundtripKind), TimeZoneInfo.Local)));
-                        else
-                            PeriodStarted?.Invoke(this, new PeriodStartedEventArgs(context.Game, play));
-                    }
+                        if (eventType.Equals("GAME_SCHEDULED"))
+                            GameScheduled?.Invoke(this, new GameScheduledEventArgs(context.Game));
 
-                    if (eventType.Equals("PERIOD_END"))
-                        PeriodEnded?.Invoke(this, new PeriodEndedEventArgs(context.Game, play));
 
-                    if (eventType.Equals("GOAL"))
-                        GoalScored?.Invoke(this, new GoalScoredEventArgs(context.Game, play));
+                        if (eventType.Equals("PERIOD_START"))
+                        {
+                            if (play.About.Period == 1)
+                                GameStarted?.Invoke(this,
+                                    new GameStartedEventArgs(context.Game,
+                                        TimeZoneInfo.ConvertTimeFromUtc(DateTime.Parse(play.About.DateTimeStr, null,
+                                            System.Globalization.DateTimeStyles.RoundtripKind), TimeZoneInfo.Local)));
+                            else
+                                PeriodStarted?.Invoke(this, new PeriodStartedEventArgs(context.Game, play));
+                        }
 
-                    if (eventType.Equals("GAME_END"))
-                        GameEnded?.Invoke(this, new GameEndedEventArgs(context.Game, context.Live, play));
 
-                    if (eventType.Equals("PENALTY"))
-                        Penalty?.Invoke(this, new PenaltyEventArgs(context.Game, play));
-                }
+                        if (eventType.Equals("PERIOD_END"))
+                            PeriodEnded?.Invoke(this, new PeriodEndedEventArgs(context.Game, play));
+
+                        if (eventType.Equals("GOAL"))
+                            GoalScored.Invoke(this, new GoalScoredEventArgs(context.Game, play));
+
+                        if (eventType.Equals("GAME_END"))
+                            GameEnded?.Invoke(this, new GameEndedEventArgs(context.Game, context.Live, play));
+
+                        if (eventType.Equals("PENALTY"))
+                            Penalty?.Invoke(this, new PenaltyEventArgs(context.Game, play));
+
+                    } // end not a shootout try
+
+                } // end if play has ID and is unknown
 
                 knownPlays.Add(playId);
             }

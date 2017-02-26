@@ -7,12 +7,11 @@ namespace StarsBot.Slack
 {
     public class SlackHandler
     {
-        public const bool Debugging = false;
-
         public static readonly string ChannelName = SlackInfo.ChannelName;
         public static readonly string BotName = "StarsBot";
 
-        public static int PostDelayMs = 20000;
+        public static readonly int DefaultPostDelayMs = 20000;
+        public static readonly int PostDelayMs = DefaultPostDelayMs;
 
         private readonly SlackClient _internalClient = new SlackClient(SlackInfo.WebhookUrl);
 

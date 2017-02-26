@@ -61,7 +61,7 @@ namespace StarsBot
                              $"for {play.Result.SecondaryType?.ToLower()}";
 
             if (playerDrewBy != null)
-                message += $" (drawn by {playerDrewBy?.FullName})";
+                message += $" (drawn by {playerDrewBy.FullName})";
 
 
             message += $". {args.Data.Teams.Away.TriCode} {play.About.Score.Away} - " +
@@ -74,46 +74,68 @@ namespace StarsBot
         public static string GoalScored(GoalScoredEventArgs r)
         {
             PlayParticipant ppScorer = r.CurrentPlay.Players.FirstOrDefault(p => p.Role.Equals("Scorer"));
-            int scorerId = ppScorer?.Id ?? 0;
 
-            if (scorerId == 0)
-            {
-                Console.WriteLine("WARNING: could not parse scorer from goal event");
-                return null;
-            }
+            Player scorer = r.Data.Players.Values.FirstOrDefault(p => p.Id == (ppScorer?.Id ?? 0));
 
-            Player scorer = r.Data.Players.FirstOrDefault(kv => kv.Value.Id == scorerId).Value;
-
-            string message = $"{scorer.CurrentTeam?.TriCode} " +
+            string message = $"{scorer?.CurrentTeam?.TriCode ?? "LOL"} " +
                              (r.CurrentPlay.Result.Strength.Code.Equals("EVEN")
                                  ? "goal"
                                  : r.CurrentPlay.Result.Strength.Code) +
-                             $" scored by #{scorer.PrimaryNumber} {scorer.FullName} " +
+                             $" scored by #{scorer?.PrimaryNumber ?? 0} {scorer?.FullName ?? "Shooter McShootface"} " +
                              $"({ppScorer?.GoalsTotal})";
 
-            List<PlayParticipant> ppAssisters = new List<PlayParticipant>(r.CurrentPlay.Players.Where(p => p.Role.Equals("Assist")));
-
+            List<PlayParticipant> ppAssisters = r.CurrentPlay.Players.Where(p => p.Role.Equals("Assist")).ToList();
             if (ppAssisters.Count > 0)
             {
-                message += ". Assists: ";
+                message += $", assisted by ";
 
-                List<Player> assisters =
-                    new List<Player>(
-                        ppAssisters.Select(p => r.Data.Players.FirstOrDefault(kv => kv.Value.Id == p.Id).Value));
+                int iAssisters = 0;
+                foreach (PlayParticipant pp in ppAssisters)
+                { 
+                    Player assister = r.Data.Players.Values.FirstOrDefault(p => p.Id == (pp?.Id ?? 0));
 
-                if (assisters.Count > 0)
-                {
-                    message = assisters.Aggregate(message, (str, p) => str + $"{p.FullName}, ");
-                    message = message.Substring(0, message.Length - 2);
+                    iAssisters++;
+                    message += $"{(iAssisters == ppAssisters.Count ? "and" : "")}" +
+                               $"{assister?.FullName ?? "someone"}" +
+                               $"{(iAssisters == ppAssisters.Count ? "" : ", ")}";
                 }
-
-                else
-                    message += "unassisted";
             }
 
-            return message + $". {r.Data.Teams.Away.TriCode} {r.CurrentPlay.About.Score.Away} - " +
-                              $"{r.Data.Teams.Home.TriCode} {r.CurrentPlay.About.Score.Home}, " +
-                              $"{r.CurrentPlay.About.PeriodTimeRemaining} left in {r.CurrentPlay.About.OrdinalNumber}.";
+            message += $". {r.Data.Teams.Away.TriCode} {r.CurrentPlay.About.Score.Away} - " +
+                       $"{r.Data.Teams.Home.TriCode} {r.CurrentPlay.About.Score.Home}, " +
+                       $"{r.CurrentPlay.About.PeriodTimeRemaining} left in {r.CurrentPlay.About.OrdinalNumber}.";
+
+            return message;
+        }
+
+        public static string ShootoutTry(ShootoutTryEventArgs args)
+        {
+            string result = "";
+
+            Play play = args.CurrentPlay;
+
+            PlayParticipant ppShooter =
+                play.Players.FirstOrDefault(p => p.Role.Equals("Scorer") || p.Role.Equals("Shooter"));
+
+            Player shooter = args.Data.Players.Values.FirstOrDefault(p => p.Id == (ppShooter?.Id ?? 0));
+
+            string outcome = (args is ShootoutGoalEventArgs) ? "GOOD" : "MISS";
+
+            result +=
+                $"SO: {play.Team.TriCode} attempt {outcome} by #{shooter?.PrimaryNumber ?? 0} {shooter?.FullName ?? "Shooter McShootface"}";
+
+            if (args is ShootoutMissEventArgs)
+            {
+                PlayParticipant ppGoalie = play.Players.FirstOrDefault(p => p.Role.Equals("Goalie"));
+                Player goalie = args.Data.Players.Values.FirstOrDefault(p => p.Id == (ppGoalie?.Id ?? 0));
+
+                result += $" (saved by {goalie?.FullName ?? "Goalie McBlockshot"})";
+            }
+
+            result += $". {args.Data.Teams.Away.TriCode} {play.About.Score.Away} - {play.About.Score.Home} {args.Data.Teams.Home.TriCode}"
+                      + " in the shootout.";
+
+            return result;
         }
     }
 }

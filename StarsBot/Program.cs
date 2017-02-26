@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using StarsBot.Files;
@@ -36,6 +34,9 @@ namespace StarsBot
                 return;
             }
 
+            Console.WriteLine($"About to start watching game {gameId}. Debug: {SlackInfo.Debugging}");
+            Console.WriteLine($"Slack message posting delay is {SlackHandler.PostDelayMs / 1000.0:F1} seconds.");
+
             StartWatching(gameId);
 
             // keep main thread open while running
@@ -62,27 +63,46 @@ namespace StarsBot
             return "";
         }
 
-        private static void Announce(string message)
+        private static void Announce(string message, NHLAPI.Models.Game.Play play = null)
         {
+            if (string.IsNullOrEmpty(message) || string.IsNullOrWhiteSpace(message))
+            {
+                if (play != null)
+                {
+                    Console.WriteLine($"ERROR: null, empty, or whitespace message built for play: #{play.About.EventIdx}");
+                    _fileHandler.DumpPlay(play);
+                }
+
+                else
+                {
+                    Console.WriteLine("ERROR: null, empty, or whitespace message built, but null play passed to Announce()");
+                }
+
+                return;
+            }
+
             Slack.PostMessage(message.Trim());
         }
 
-        private static void StartWatching(string _gameId)
+        private static void StartWatching(string gameId)
         {
-            Console.Clear();
-            Console.WriteLine($"Watching game: {_gameId}\n");
+            Console.WriteLine($"\nWatching game: {gameId}\n");
 
-            _fileHandler = new FileHandler(_gameId);
+            _fileHandler = new FileHandler(gameId);
 
-            _watcher = new Watcher(_gameId, _fileHandler);
+            _watcher = new Watcher(gameId, _fileHandler);
 
             _watcher.GameScheduled += (_, r) => Announce(MessageBuilder.Greeting(r));
             _watcher.GameStarted += (_, r) => Announce(MessageBuilder.GameStart(r));
 
-            _watcher.PeriodStarted += (_, r) => Announce(MessageBuilder.PeriodStart(r));
-            _watcher.PeriodEnded += (_, r) => Announce(MessageBuilder.PeriodEnd(r));
+            _watcher.PeriodStarted += (_, r) => Announce(MessageBuilder.PeriodStart(r), r.CurrentPlay);
+            _watcher.PeriodEnded += (_, r) => Announce(MessageBuilder.PeriodEnd(r), r.CurrentPlay);
 
-            _watcher.Penalty += (_, r) => Announce(MessageBuilder.Penalty(r));
+            _watcher.Penalty += (_, r) => Announce(MessageBuilder.Penalty(r), r.CurrentPlay);
+
+            _watcher.GoalScored += (_, r) => Announce(MessageBuilder.GoalScored(r), r.CurrentPlay);
+            _watcher.ShootoutTry += (_, r) => Announce(MessageBuilder.ShootoutTry(r), r.CurrentPlay);
+
 
             _watcher.NullData += (_, r) =>
             {
@@ -93,27 +113,10 @@ namespace StarsBot
 
             _watcher.GameEnded += (_, r) =>
             {
-                Announce(MessageBuilder.GameEnd(r));
+                Announce(MessageBuilder.GameEnd(r), r.CurrentPlay);
                 _running = false;
             };
 
-            _watcher.GoalScored += (_, r) =>
-            {
-                string message = MessageBuilder.GoalScored(r);
-
-                if (!string.IsNullOrEmpty(message))
-                    Announce(message);
-
-                else
-                {
-                    RunningData data = _fileHandler.Load();
-                    if (data.KnownPlays.Contains(r.CurrentPlay.About.EventIdx))
-                    {
-                        data.KnownPlays.Remove(r.CurrentPlay.About.EventIdx);
-                        _fileHandler.Save(data);
-                    }
-                }
-            };
 
             _watcher.Start();
             _running = true;
