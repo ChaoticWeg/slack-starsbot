@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Slack.Webhooks;
+using StarsBot.Config;
 
 namespace StarsBot.Slack
 {
@@ -10,8 +11,7 @@ namespace StarsBot.Slack
         public static readonly string ChannelName = SlackInfo.ChannelName;
         public static readonly string BotName = "StarsBot";
 
-        public static readonly int DefaultPostDelayMs = 20000;
-        public static readonly int PostDelayMs = DefaultPostDelayMs;
+        public static readonly int PostDelayMs = ConfigHandler.Slack_PostDelay;
 
         private readonly SlackClient _internalClient = new SlackClient(SlackInfo.WebhookUrl);
 

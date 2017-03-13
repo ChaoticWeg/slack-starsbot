@@ -6,7 +6,6 @@ namespace StarsBot.Files
 {
     public class FileHandler
     {
-        private readonly Uri _dataDirUri;
         private readonly Uri _dataFileUri;
         private readonly Uri _dumpsDirUri;
 
@@ -17,15 +16,15 @@ namespace StarsBot.Files
             GameId = gameId;
 
             // create URI and validate directory for data
-            _dataDirUri = new Uri(Uri.UnescapeDataString(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StarsBotData")));
-            Directory.CreateDirectory(_dataDirUri.AbsolutePath);
+            Uri dataDirUri = new Uri(Uri.UnescapeDataString(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StarsBotData")));
+            Directory.CreateDirectory(dataDirUri.AbsolutePath);
 
             // create URI and validate directory for data dumps
-            _dumpsDirUri = new Uri(Uri.UnescapeDataString(Path.Combine(_dataDirUri.AbsolutePath, "dump", $"{GameId}")));
+            _dumpsDirUri = new Uri(Uri.UnescapeDataString(Path.Combine(dataDirUri.AbsolutePath, "dump", $"{GameId}")));
             Directory.CreateDirectory(_dumpsDirUri.AbsolutePath);
 
             // create URI for data file
-            _dataFileUri = new Uri(Uri.UnescapeDataString(Path.Combine(_dataDirUri.AbsolutePath, $"{GameId}.json")));
+            _dataFileUri = new Uri(Uri.UnescapeDataString(Path.Combine(dataDirUri.AbsolutePath, $"{GameId}.json")));
         }
 
         public void Save(RunningData data)
